@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffc400"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Babaye Électricité">
+<title>Babaye Électricité</title>
+<style>
+:root{--bg:#061016;--card:#101c23;--card2:#16252d;--text:#f7f8f8;--muted:#9eabb2;--yellow:#ffc400;--green:#27c93f;--danger:#ff5c57}
+*{box-sizing:border-box}body{margin:0;background:#02080c;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+#app{max-width:480px;min-height:100vh;margin:auto;background:linear-gradient(#061016,#02080c);position:relative}
+header{padding:18px 18px 8px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(6,16,22,.94);backdrop-filter:blur(12px);z-index:5}
+.logo{font-weight:900;letter-spacing:.5px}.logo b{color:var(--yellow)}button{border:0;border-radius:12px;padding:13px 16px;font-weight:800;cursor:pointer}.primary{background:var(--yellow);color:#111}.secondary{background:var(--card2);color:#fff}.ghost{background:transparent;color:#fff}
+main{padding:10px 16px 94px}.hero{padding:20px 4px 14px}.hero h1{font-size:27px;margin:0 0 6px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{background:linear-gradient(145deg,var(--card2),var(--card));border:1px solid #22343d;border-radius:16px;padding:16px}.card h3{margin:9px 0 5px}.icon{font-size:26px}.wide{grid-column:1/-1}.section{margin:22px 0 10px;font-size:18px}.list{display:flex;flex-direction:column;gap:10px}.row{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid #20313a;border-radius:13px;padding:13px}.row .grow{flex:1}.badge{font-size:12px;color:#111;background:var(--yellow);padding:4px 7px;border-radius:999px;font-weight:800}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:9px 6px calc(9px + env(safe-area-inset-bottom));background:rgba(5,13,18,.97);border-top:1px solid #22343d;z-index:10}
+nav button{background:none;color:var(--muted);padding:5px 2px;font-size:11px}nav button.active{color:var(--yellow)}nav span{display:block;font-size:20px;margin-bottom:2px}
+.back{margin-bottom:14px}.course-img{height:170px;border-radius:16px;background:radial-gradient(circle at 65% 35%,#394a52,#101b20 48%,#050c10);display:flex;align-items:center;justify-content:center;font-size:70px}
+.progress{height:8px;background:#1e3038;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:var(--yellow);width:35%}
+.option{width:100%;text-align:left;margin:8px 0;background:var(--card);color:#fff;border:1px solid #263a44}.option.correct{background:#145d22}.option.wrong{background:#63201e}
+input{width:100%;padding:13px;border-radius:11px;border:1px solid #30434c;background:#0c171d;color:white;margin:6px 0 12px}
+.small{font-size:13px}.notice{padding:12px;border-radius:12px;background:#231e08;border:1px solid #665300;color:#ffe37a}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const courses=[
+ {id:'battery',title:'Batterie',icon:'🔋',level:'Débutant',text:"La batterie stocke l’énergie électrique et alimente certains circuits. Apprends à reconnaître ses connexions et les vérifications de base."},
+ {id:'alternator',title:'Alternateur / charge',icon:'⚡',level:'Débutant',text:"Découvre le rôle du système de charge et les signes généraux d’un problème de charge."},
+ {id:'starter',title:'Démarreur',icon:'🔄',level:'Intermédiaire',text:"Comprends le circuit de démarrage, le relais et les contrôles simples à effectuer."},
+ {id:'lights',title:'Éclairage',icon:'💡',level:'Débutant',text:"Découvre le circuit d’éclairage, les fusibles, les interrupteurs et les connexions."},
+ {id:'diagram',title:'Schémas électriques',icon:'🧩',level:'Intermédiaire',text:"Apprends à lire un schéma électrique moto élémentaire."}
+];
+const videos=['Comprendre une batterie de moto','Comprendre le système de démarrage','Comprendre le système de charge','Comprendre l’éclairage','Utiliser un multimètre'];
+const quiz=[
+ {q:"Quel élément stocke l’énergie électrique dans de nombreux systèmes moto ?",a:["La batterie","Le pneu","Le carburateur","Le silencieux"],c:0},
+ {q:"À quoi sert principalement un fusible ?",a:["Protéger un circuit","Gonfler le pneu","Refroidir le moteur","Lubrifier la chaîne"],c:0},
+ {q:"Quel appareil permet de mesurer une tension électrique ?",a:["Un multimètre","Un manomètre","Un thermomètre","Un compte-tours"],c:0}
+];
+let state={page:'home',course:null,diagStep:0,quiz:0,score:0,selected:null,done:new Set(JSON.parse(localStorage.done||'[]'))};
+function save(){localStorage.done=JSON.stringify([...state.done])}
+function nav(name){state.page=name;render()}
+function header(title='Babaye Électricité',back=false){return `<header>${back?`<button class="ghost" onclick="nav('home')">←</button>`:`<div class="logo">BABAYE <b>ÉLECTRICITÉ ⚡</b></div>`}<strong>${back?title:''}</strong><button class="ghost" onclick="alert('Notifications : aucun nouveau message.')">🔔</button></header>`}
+function bottom(active){let items=[['home','⌂','Accueil'],['courses','📚','Cours'],['diagnostic','🔧','Diagnostic'],['videos','▶','Vidéos'],['profile','👤','Profil']];return `<nav>${items.map(x=>`<button class="${active===x[0]?'active':''}" onclick="nav('${x[0]}')"><span>${x[1]}</span>${x[2]}</button>`).join('')}</nav>`}
+function layout(content,active='home,title'){return content}
+function render(){
+ let c='';
+ if(state.page==='home')c=home();
+ if(state.page==='courses')c=coursesPage();
+ if(state.page==='course')c=coursePage();
+ if(state.page==='diagnostic')c=diagnosticPage();
+ if(state.page==='diagresult')c=diagResult();
+ if(state.page==='videos')c=videosPage();
+ if(state.page==='quiz')c=quizPage();
+ if(state.page==='profile')c=profilePage();
+ if(state.page==='diagram')c=diagramPage();
+ document.getElementById('app').innerHTML=c;
+}
+function home(){return `${header()}<main><section class="hero"><div class="muted">Bonjour 👋</div><h1>Apprends l’électricité moto.</h1><p class="muted">Cours simples, diagnostic guidé et quiz.</p></section>
+<div class="grid">
+<div class="card" onclick="nav('courses')"><div class="icon">📚</div><h3>Cours</h3><p class="muted small">Apprendre étape par étape</p></div>
+<div class="card" onclick="nav('diagnostic')"><div class="icon">🔧</div><h3>Diagnostic</h3><p class="muted small">Explorer une panne</p></div>
+<div class="card" onclick="nav('videos')"><div class="icon">▶️</div><h3>Vidéos</h3><p class="muted small">Apprendre en vidéo</p></div>
+<div class="card" onclick="nav('quiz')"><div class="icon">🧠</div><h3>Quiz</h3><p class="muted small">Tester tes connaissances</p></div>
+<div class="card wide" onclick="nav('diagram')"><div class="icon">🧩</div><h3>Schéma électrique</h3><p class="muted small">Voir un circuit moto de base</p></div>
+</div><h2 class="section">Continuer</h2><div class="card"><b>Batterie</b><div class="progress" style="margin:12px 0"><i style="width:${state.done.has('battery')?100:35}%"></i></div><button class="primary" onclick="openCourse('battery')">${state.done.has('battery')?'Revoir le cours':'Commencer'}</button></div></main>${bottom('home')}`}
+function coursesPage(){return `${header('Cours',true)}<main><h2>Cours d’électricité moto</h2><p class="muted">Choisis un thème pour commencer.</p><div class="list">${courses.map(x=>`<div class="row" onclick="openCourse('${x.id}')"><div class="icon">${x.icon}</div><div class="grow"><b>${x.title}</b><div class="muted small">${x.level}</div></div>${state.done.has(x.id)?'<span class="badge">✓</span>':'→'}</div>`).join('')}</div></main>${bottom('courses')}`}
+function openCourse(id){state.course=courses.find(x=>x.id===id);state.page='course';render()}
+function coursePage(){let x=state.course;return `${header(x.title,true)}<main><div class="course-img">${x.icon}</div><h2>${x.title}</h2><span class="badge">${x.level}</span><h3>Objectif</h3><p>${x.text}</p><h3>À retenir</h3><div class="card"><p>• Identifier les principaux composants.</p><p>• Comprendre le cheminement général du courant.</p><p>• Faire les vérifications de base avec prudence.</p></div><div class="notice">⚠️ Pour une intervention réelle, coupe l’alimentation et demande l’aide d’un adulte ou d’un professionnel si tu n’es pas sûr.</div><br><button class="primary" onclick="state.done.add('${x.id}');save();nav('courses')">${state.done.has(x.id)?'Cours terminé ✓':'Marquer comme terminé'}</button></main>`}
+function diagnosticPage(){let opts=['La moto ne démarre pas','Les phares ne fonctionnent pas','Le klaxon ne fonctionne pas','Les clignotants ne fonctionnent pas','La batterie ne semble pas se charger'];return `${header('Diagnostic',true)}<main><h2>Quel problème rencontres-tu ?</h2><p class="muted">Choisis un symptôme pour explorer des causes possibles.</p><div class="list">${opts.map((o,i)=>`<div class="row" onclick="startDiag(${i})"><div class="icon">${['🔴','💡','📣','↔️','🔋'][i]}</div><div class="grow">${o}</div>→</div>`).join('')}</div><div class="notice" style="margin-top:18px">Le diagnostic donne des pistes générales et ne remplace pas le contrôle d’un professionnel.</div></main>${bottom('diagnostic')}`}
+function startDiag(i){state.diagStep=i;state.page='diagresult';render()}
+function diagResult(){let data=[
+['La moto ne démarre pas',['Batterie faible','Connexion de batterie à vérifier','Fusible ou relais à contrôler','Circuit de démarrage à faire vérifier']],
+['Les phares ne fonctionnent pas',['Ampoule à vérifier','Fusible à contrôler','Interrupteur et connexions à vérifier']],
+['Le klaxon ne fonctionne pas',['Fusible à contrôler','Bouton/connexion à vérifier','Klaxon à faire tester']],
+['Les clignotants ne fonctionnent pas',['Ampoules ou LED à vérifier','Fusible et connexions à contrôler','Relais à faire vérifier']],
+['La batterie ne semble pas se charger',['Connexions à vérifier','Système de charge à faire contrôler','Batterie à tester']]
+][state.diagStep];return `${header('Résultat du diagnostic',true)}<main><div class="card"><h2>⚠️ Causes possibles</h2>${data[1].map((x,i)=>`<p><b>${i+1}.</b> ${x}</p>`).join('')}</div><h3>Que faire ?</h3><p class="muted">Commence par les vérifications simples et évite toute manipulation électrique si tu n’es pas accompagné.</p><button class="primary" onclick="nav('diagnostic')">Nouveau diagnostic</button></main>`}
+function videosPage(){return `${header('Vidéos',true)}<main><h2>Apprendre en vidéo</h2><div class="list">${videos.map((v,i)=>`<div class="row" onclick="alert('Lecteur vidéo : ${v.replaceAll("'","")}\\nAjoute ta vidéo ici dans la prochaine version.')"><div class="icon">▶️</div><div class="grow"><b>${v}</b><div class="muted small">${8+i*2}:20</div></div>→</div>`).join('')}</div></main>${bottom('videos')}`}
+function quizPage(){let q=quiz[state.quiz];if(!q)return `<main>${header('Quiz',true)}<div class="hero"><h2>Félicitations 🎉</h2><h1>${state.score}/${quiz.length}</h1><p class="muted">Tu peux refaire le quiz pour progresser.</p><button class="primary" onclick="state.quiz=0;state.score=0;state.selected=null;render()">Refaire le quiz</button></div></main>${bottom('courses')}`;return `${header('Quiz',true)}<main><p class="muted">Question ${state.quiz+1}/${quiz.length}</p><div class="progress"><i style="width:${(state.quiz/quiz.length)*100}%"></i></div><h2>${q.q}</h2>${q.a.map((a,i)=>`<button class="option ${state.selected!==null?(i===q.c?'correct':i===state.selected?'wrong':''):''}" onclick="answer(${i})">${String.fromCharCode(65+i)}. ${a}</button>`).join('')}<br><button class="primary" onclick="nextQuiz()" ${state.selected===null?'disabled':''}>${state.quiz===quiz.length-1?'Terminer':'Suivant'} →</button></main>${bottom('courses')}`}
+function answer(i){if(state.selected!==null)return;state.selected=i;if(i===quiz[state.quiz].c)state.score++;render()}
+function nextQuiz(){if(state.selected===null)return;if(state.quiz<quiz.length-1){state.quiz++;state.selected=null}else{state.quiz=quiz.length;state.selected=null}render()}
+function profilePage(){let done=[...state.done].length;return `${header('Profil',true)}<main><div class="card"><div class="icon">👤</div><h2>Babaye</h2><p class="muted">Apprenant</p></div><h2 class="section">Ma progression</h2><div class="grid"><div class="card"><b>${done}</b><div class="muted small">Cours terminés</div></div><div class="card"><b>${Math.round(done/courses.length*100)}%</b><div class="muted small">Progression</div></div></div><h2 class="section">Menu</h2><div class="list"><div class="row" onclick="alert('Les favoris seront disponibles dans une prochaine version.')">❤️ <div class="grow">Mes favoris</div>→</div><div class="row" onclick="alert('Paramètres')">⚙️ <div class="grow">Paramètres</div>→</div><div class="row" onclick="alert('Aide : contact Babaye Électricité.')">❓ <div class="grow">Aide & Contact</div>→</div></div></main>${bottom('profile')}`}
+function diagramPage(){return `${header('Schéma électrique',true)}<main><h2>Schéma électrique de base</h2><div class="card" style="text-align:center;font-size:18px">🔋 Batterie<br>↓<br>🧯 Fusible<br>↓<br>🔑 Contacteur<br>↙️ ↓ ↘️<br>💡 Éclairage &nbsp; 📣 Klaxon &nbsp; 🔄 Démarreur</div><p class="muted">Schéma pédagogique simplifié. Le câblage réel varie selon le modèle de moto.</p></main>`}
+render();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("./service-worker.js").catch(()=>{});}</script></body></html>

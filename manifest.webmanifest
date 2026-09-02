@@ -1,0 +1,11 @@
+{
+  "name": "Babaye Électricité",
+  "short_name": "Babaye Électricité",
+  "description": "Apprendre et comprendre l’électricité moto.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#02080c",
+  "theme_color": "#ffc400",
+  "orientation": "portrait",
+  "lang": "fr"
+}
